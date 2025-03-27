@@ -30,9 +30,6 @@ The repo includes example visualizations of decision boundaries compared to Ligh
 - Optimize `predict_from_tree_batch` with GPU-accelerated tree traversal
 - Add support for custom loss functions
 
-## License
-MIT
-
 ---
 
 Questions or ideas? Open an issue or fork the project to experiment with new GBDT ideas.
