@@ -11,12 +11,19 @@ __global__ void best_split_kernel(
     float min_child_samples,
     float eps,
     int* out_feature,
-    int* out_bin
+    int* out_bin,
+    void* shared_mem
 ) {
-    // One thread per feature
     int f = blockIdx.x * blockDim.x + threadIdx.x;
     if (f >= F) return;
 
+    // Cast shared memory
+    extern __shared__ char smem[];
+    float* gains = reinterpret_cast<float*>(smem);
+    int* features = reinterpret_cast<int*>(&gains[blockDim.x]);
+    int* bins = reinterpret_cast<int*>(&features[blockDim.x]);
+
+    // Calculate total G and H for this feature
     float G_total = 0.0f, H_total = 0.0f;
     for (int b = 0; b < B; ++b) {
         G_total += G[f * B + b];
@@ -42,17 +49,12 @@ __global__ void best_split_kernel(
         }
     }
 
-    // Write out the best bin/gain for this thread
-    __shared__ float gains[1024];  // adjust max threads
-    __shared__ int features[1024];
-    __shared__ int bins[1024];
-
     gains[threadIdx.x] = best_gain;
     features[threadIdx.x] = f;
     bins[threadIdx.x] = best_bin;
     __syncthreads();
 
-    // Thread 0 in the block reduces to best feature/bin
+    // Thread 0 in each block finds best among its block
     if (threadIdx.x == 0) {
         float block_best_gain = min_split_gain;
         int block_best_feature = -1;
@@ -65,7 +67,7 @@ __global__ void best_split_kernel(
             }
         }
 
-        // Only one block, so directly write to global output
+        // Write to global outputs
         *out_feature = block_best_feature;
         *out_bin = block_best_bin;
     }
@@ -85,7 +87,9 @@ extern "C" void launch_best_split_kernel_cuda(
     int threads = 1024;
     int blocks = (F + threads - 1) / threads;
 
-    best_split_kernel<<<blocks, threads>>>(
+    size_t shared_mem_bytes = threads * (sizeof(float) + 2 * sizeof(int));
+
+    best_split_kernel<<<blocks, threads, shared_mem_bytes>>>(
         G.data_ptr<float>(),
         H.data_ptr<float>(),
         F,
@@ -94,6 +98,7 @@ extern "C" void launch_best_split_kernel_cuda(
         min_child_samples,
         eps,
         out_feature.data_ptr<int>(),
-        out_bin.data_ptr<int>()
+        out_bin.data_ptr<int>(),
+        nullptr  // shared memory pointer not needed; just launch size
     );
 }

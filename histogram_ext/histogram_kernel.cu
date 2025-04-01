@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <torch/extension.h>
+#include <cstdint>  // for int64_t
 
 // The actual CUDA kernel
 __global__ void histogram_kernel(
@@ -8,13 +9,14 @@ __global__ void histogram_kernel(
     const float* gradients,
     float* grad_hist,
     float* hess_hist,
-    int N, int F, int B
+    int64_t N, int64_t F, int64_t B
 ) {
-    int sample = blockIdx.x * blockDim.x + threadIdx.x;
+    int64_t sample = blockIdx.x * blockDim.x + threadIdx.x;
     if (sample >= N) return;
 
-    for (int f = 0; f < F; ++f) {
-        int b = bin_indices[sample * F + f];
+    for (int64_t f = 0; f < F; ++f) {
+        int64_t idx = sample * F + f;
+        int8_t b = bin_indices[idx];
         if (b >= 0 && b < B) {
             atomicAdd(&grad_hist[f * B + b], gradients[sample]);
             atomicAdd(&hess_hist[f * B + b], 1.0f);
@@ -30,10 +32,10 @@ void launch_histogram_kernel_cuda(
     at::Tensor& hess_hist,
     int num_bins
 ) {
-    int N = bin_indices.size(0);
-    int F = bin_indices.size(1);
+    int64_t N = bin_indices.size(0);
+    int64_t F = bin_indices.size(1);
     int threads = 256;
-    int blocks = (N + threads - 1) / threads;
+    int blocks = static_cast<int>((N + threads - 1) / threads);  // still int
 
     histogram_kernel<<<blocks, threads>>>(
         bin_indices.data_ptr<int8_t>(),
