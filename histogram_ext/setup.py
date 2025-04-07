@@ -2,14 +2,15 @@ from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 setup(
-    name='histogram_ext',
+    name='node_kernel',
     ext_modules=[
         CUDAExtension(
-            name='histogram_ext',
+            name='node_kernel',
             sources=[
-                'histogram.cpp',
+                'node_kernel.cpp',
+                'process_node_kernel.cu',
                 'histogram_kernel.cu',
-                'best_split_kernel.cu',
+                'best_split_kernel.cu'
             ],
         )
     ],
