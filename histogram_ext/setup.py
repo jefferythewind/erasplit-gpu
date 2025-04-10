@@ -7,10 +7,12 @@ setup(
         CUDAExtension(
             name='node_kernel',
             sources=[
-                'node_kernel.cpp',
-                'process_node_kernel.cu',
+                # 'process_node_kernel.cu',
                 'histogram_kernel.cu',
-                'best_split_kernel.cu'
+                'best_split_kernel.cu',
+                'predict_forest_kernel.cu',
+                # 'split_gain_kernel.cu',
+                'node_kernel.cpp',
             ],
         )
     ],
