@@ -31,6 +31,14 @@ void launch_histogram_kernel_cuda(
     int num_bins
 );
 
+void launch_histogram_kernel_cuda_2(
+    const at::Tensor& bin_indices,   // int8 [N, F]
+    const at::Tensor& gradients,     // float32 [N]
+    at::Tensor& grad_hist,           // float32 [F * B]
+    at::Tensor& hess_hist,           // float32 [F * B]
+    int num_bins
+);
+
 void launch_best_split_kernel_cuda(
     const at::Tensor& G,
     const at::Tensor& H,
@@ -67,6 +75,7 @@ void launch_predict_forest_cuda(
 // Bindings
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("compute_histogram", &launch_histogram_kernel_cuda, "Histogram (CUDA)");
+    m.def("compute_histogram2", &launch_histogram_kernel_cuda_2, "Histogram (CUDA) 2");
     m.def("compute_split", &launch_best_split_kernel_cuda, "Best Split (CUDA)");
     m.def("predict_forest", &launch_predict_forest_cuda, "Forest Prediction (CUDA)");
     // m.def("node_kernel", &launch_process_node_kernel_cuda, "GPU Tree Growing Launcher");

@@ -73,7 +73,7 @@ __global__ void best_split_kernel(
     }
 }
 
-extern "C" void launch_best_split_kernel_cuda(
+void launch_best_split_kernel_cuda(
     const at::Tensor& G,
     const at::Tensor& H,
     int F,
